@@ -2,10 +2,10 @@ import discord
 import tweepy
 import config
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import tasks, commands
 
 
-class Questions(commands.Cog):
+class Twitter(commands.Cog):
 
     def __init__(self, dotxbot: commands.Bot):
         self.dotxbot = dotxbot
@@ -13,16 +13,43 @@ class Questions(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print('Questions cog loaded!')
+        print('Twitter cog loaded!')
     
     @commands.command()
     async def sync(self, ctx) -> None:
-        fmt = await ctx.bot.tree.sync(guild=ctx.guild)
+        fmt = await ctx.bot.tree.sync(guild=ctx.guild) # sync for specifi guild
+        # fmt = await ctx.bot.tree.sync() # sync globally 
         await ctx.send(f'Synced {len(fmt)} commands!')
+        return
+    
 
-    @app_commands.command(name='questions', description='questions form')
-    async def questions(self, interaction: discord.Interaction, quesiton: str):
-        await interaction.response.send_message('Answered!')
+    @app_commands.command(name='follow', description='follow twitter posts from specified twitter handle')
+    # @tasks.loop(seconds=10)
+    async def follow(self, interaction: discord.Interaction, twitter_username: str):#, channel: str, inclutde_retweets: bool):
+        compare_id = 0
+        prefix_post_url ='https://twitter.com/'
+
+        tweets = twitter_api.api.user_timeline(
+            screen_name=twitter_username, 
+            count=1, 
+            tweet_mode='extended', 
+            exclude_replies=True, 
+            include_rts=False
+            )
+        for tweet in tweets:
+            if compare_id < tweet.id:
+                compare_id = tweet.id
+                embed = discord.Embed(color=discord.Color.green())
+                embed.set_author(name=tweet.user.name, url=f'{prefix_post_url}{tweet.user.screen_name}')
+                embed.description = tweet.full_text
+                embed.set_image(url=tweet.entities['media'][0]['media_url_https'])
+                embed.set_thumbnail(url=tweet.user.profile_image_url_https)
+                embed.set_footer(text='Powered by dotX BOT', 
+                icon_url='https://pbs.twimg.com/media/FnuqBzaXoAI1nVX?format=png&name=240x240')
+                embed.timestamp = tweet.created_at
+                await interaction.response.send_message(f'{prefix_post_url}{tweet.user.screen_name}/status/{tweet.id}', embed=embed)
+            else:
+                print('Waiting for a new post!')
 
 
 class TwitterAPI:
@@ -41,4 +68,5 @@ twitter_api = TwitterAPI()
 
 
 async def setup(dotxbot):
-    await dotxbot.add_cog(Questions(dotxbot), guilds=[discord.Object(id=931121706070839336)])
+    await dotxbot.add_cog(Twitter(dotxbot), guilds=[discord.Object(id=931121706070839336)]) # specific guild
+    # await dotxbot.add_cog(Twitter(dotxbot)) # global
