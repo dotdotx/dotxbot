@@ -1,7 +1,6 @@
 import discord
 import config
 import asyncio
-import requests
 import os
 from discord.ext import commands
 
@@ -12,6 +11,7 @@ dotxbot = commands.Bot(command_prefix='.', intents=discord.Intents.all(), applic
 @dotxbot.event
 async def on_ready():
     print('Online!')
+    
 
 @dotxbot.event
 async def on_message(message):
